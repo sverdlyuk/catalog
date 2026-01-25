@@ -1,0 +1,17 @@
+name: Гра "Кубики" (LUA)
+sources:
+  type: git
+  location:
+    origin: https://github.com/andrijpv/LilkaCubes
+entryfile:
+  type: lua
+  location:
+    origin: https://raw.githubusercontent.com/andrijpv/LilkaCubes/refs/heads/main/filegame/lilkaсubes.lua
+short_description: Проста та захоплююча гра в кубики, розроблена для консолі Lilka
+description: "@DESCRIPTION.md"
+author: "@andrijpv"
+license: NONE
+keira_version: 1.0.0
+icon: image.png
+screenshots:
+  - image.png
