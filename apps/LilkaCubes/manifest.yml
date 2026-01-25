@@ -12,6 +12,7 @@ description: "@DESCRIPTION.md"
 author: "@andrijpv"
 license: NONE
 keira_version: 1.0.0
-icon: image.png
+icon: image0.png
 screenshots:
-  - image.png
+  - image0.png
+  - image1.png
