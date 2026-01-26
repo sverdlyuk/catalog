@@ -4,6 +4,8 @@ ESPHome конфігурація для Lilka з підтримкою LVGL (Litt
 
 ESPHome configuration for Lilka with LVGL (LittlevGL) graphics framework support.
 
+![521593249-330f7477-2f81-4e32-b60c-75d941f841c9](https://github.com/user-attachments/assets/86af5b5d-1990-4d75-af79-8d751346a724)
+
 ## Можливості
 
 - ✅ Підтримка дисплея ST7789V (240x280, SPI)
@@ -63,12 +65,10 @@ ESPHome configuration for Lilka with LVGL (LittlevGL) graphics framework support
 
 ## Конфігурація
 
-Повна конфігурація доступна на [Pastebin](https://pastebin.com/aNXqw5bQ)
+Повна конфігурація доступна на [GitHub](https://github.com/sverdlyuk/Lilka-ESPHome)
 
 ## Статус розробки
 
-⚠️ **В процесі розробки** - Кнопки підключені, але LVGL дії для них ще не реалізовані.
-
+⚠️ **В процесі розробки** - 
 ## Автор
-
 Свердлюк (sverdlyuk)
