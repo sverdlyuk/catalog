@@ -455,6 +455,17 @@ class LilkaRepository {
                     `;
         }
       }
+
+      if (manifest.package) {
+        const packageDownloadPath = `${basePath}/${manifest.package}`;
+        filesSection += `
+                    <div class="modal-section">
+                        <h3>📦 Package ZIP</h3>
+                        <p><strong>File:</strong> ${this.escapeHtml(manifest.package)}</p>
+                        <a href="${packageDownloadPath}" download class="download-btn" data-umami-event="download-package-zip" data-umami-event-item="${this.escapeHtml(manifest.name)}">⬇️ Download ZIP</a>
+                    </div>
+                `;
+      }
     } catch (error) {
       console.error('Error parsing files section:', error);
       filesSection = `

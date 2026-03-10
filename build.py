@@ -5,6 +5,7 @@ import requests
 import argparse
 import html
 import json
+import zipfile
 from PIL import Image
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import threading
@@ -451,6 +452,58 @@ def gen_static_folder(manifest, type, output_dir) -> dict:
 
     return manifest
 
+
+def create_package_zip(manifest, type, output_dir) -> str:
+    """Create package ZIP with manifest and downloadable files."""
+    package_filename = "package.zip"
+    package_path = os.path.join(output_dir, package_filename)
+    static_path = os.path.join(output_dir, "static")
+    source_manifest_path = os.path.join(type + "s", manifest['path'], "manifest.yml")
+
+    files_to_add = []
+
+    if type == "app":
+        if manifest.get('entryfile') and manifest['entryfile'].get('location'):
+            files_to_add.append(manifest['entryfile']['location'])
+        elif manifest.get('executionfile') and manifest['executionfile'].get('location'):
+            files_to_add.append(manifest['executionfile']['location'])
+
+        if manifest.get('files'):
+            for file in manifest['files']:
+                location = file.get('location') if isinstance(file, dict) else None
+                if location:
+                    files_to_add.append(location)
+
+    elif type == "mod":
+        if manifest.get('modfiles'):
+            for file in manifest['modfiles']:
+                location = file.get('location') if isinstance(file, dict) else None
+                if location:
+                    files_to_add.append(location)
+
+    with zipfile.ZipFile(package_path, 'w', zipfile.ZIP_DEFLATED) as package_zip:
+        if os.path.exists(source_manifest_path):
+            package_zip.write(source_manifest_path, arcname="manifest.yml")
+
+        added_files = set()
+        for item in files_to_add:
+            location = item
+            if isinstance(item, dict):
+                location = item.get('origin')
+            if not location:
+                continue
+
+            filename = os.path.basename(location)
+            if filename in added_files:
+                continue
+
+            file_path = os.path.join(static_path, filename)
+            if os.path.exists(file_path):
+                package_zip.write(file_path, arcname=filename)
+                added_files.add(filename)
+
+    return package_filename
+
 def process_manifest(manifest, type) -> None:
     output_dir = os.path.join("./build", type+"s", manifest['path'])
 
@@ -459,6 +512,7 @@ def process_manifest(manifest, type) -> None:
         os.makedirs(output_dir, exist_ok=True)
         
         manifest = gen_static_folder(manifest, type, output_dir)
+        package_filename = create_package_zip(manifest, type, output_dir)
 
         if type == "app":
             short_data = {
@@ -511,6 +565,9 @@ def process_manifest(manifest, type) -> None:
             # Only include modfiles if they exist
             if manifest.get("modfiles"):
                 full_data["modfiles"] = manifest["modfiles"]
+
+        if package_filename:
+            full_data["package"] = package_filename
         
         with open(os.path.join(output_dir, 'index.json'), 'w', encoding='utf-8') as file:
             json.dump(full_data, file, indent=2, ensure_ascii=False)
