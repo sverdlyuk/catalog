@@ -12,3 +12,5 @@ description: "@README.md"
 author: "@sverdlyuk"
 license: MIT
 keira_version: 2.6.1
+screenshots:
+  - stopwatch.png
