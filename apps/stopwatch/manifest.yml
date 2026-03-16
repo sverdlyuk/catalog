@@ -6,7 +6,7 @@ sources:
 entryfile:
   type: lua
   location:
-    origin: https://raw.githubusercontent.com/sverdlyuk/lilka_stopwatch/refs/heads/main/stopwatch/stopwatch.lua
+    origin: https://raw.githubusercontent.com/lilka-dev/catalog/refs/heads/main/apps/stopwatch/stopwatch.lua
 short_description: Простий секундомір з колами для консолі Lilka
 description: "@README.md"
 author: "@sverdlyuk"
