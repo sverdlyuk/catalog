@@ -35,8 +35,19 @@ class LilkaRepository {
     // Handle authors page
     if (type === 'authors') {
       this.currentType = type;
+      const authorParam = params.get('author');
       await this.showAuthors();
       this.updateActiveTab('authors');
+      if (authorParam) {
+        const sectionId = `author-${this.authorSlug(authorParam)}`;
+        const section = document.getElementById(sectionId);
+        if (section) {
+          section.classList.remove('collapsed');
+          section.scrollIntoView({behavior: 'smooth', block: 'start'});
+          section.classList.add('author-highlight');
+          setTimeout(() => section.classList.remove('author-highlight'), 2000);
+        }
+      }
       return;
     }
 
@@ -60,9 +71,12 @@ class LilkaRepository {
     document.querySelector(`[data-type="${type}"]`).classList.add('active');
 
     // Show/hide appropriate content
-    document.getElementById('content').style.display = (type === 'docs' || type === 'authors') ? 'none' : 'block';
-    document.getElementById('docs').style.display = type === 'docs' ? 'block' : 'none';
-    document.getElementById('authors').style.display = type === 'authors' ? 'block' : 'none';
+    document.getElementById('content').style.display =
+        (type === 'docs' || type === 'authors') ? 'none' : 'block';
+    document.getElementById('docs').style.display =
+        type === 'docs' ? 'block' : 'none';
+    document.getElementById('authors').style.display =
+        type === 'authors' ? 'block' : 'none';
   }
 
   async openDirectItem(type, itemName) {
@@ -269,15 +283,17 @@ class LilkaRepository {
       });
 
       // Collapsible author sections
-      authorsContainer.querySelectorAll('.author-section-header').forEach(header => {
-        header.addEventListener('click', () => {
-          const section = header.closest('.author-section');
-          section.classList.toggle('collapsed');
-        });
-      });
+      authorsContainer.querySelectorAll('.author-section-header')
+          .forEach(header => {
+            header.addEventListener('click', () => {
+              const section = header.closest('.author-section');
+              section.classList.toggle('collapsed');
+            });
+          });
     } catch (error) {
       authorsContainer.innerHTML =
-          `<p style="color: var(--error);">Failed to load authors: ${error.message}</p>`;
+          `<p style="color: var(--error);">Failed to load authors: ${
+              error.message}</p>`;
     }
   }
 
@@ -290,12 +306,16 @@ class LilkaRepository {
       const apps = items.filter(i => i.type === 'apps');
       const mods = items.filter(i => i.type === 'mods');
       const badge = [];
-      if (apps.length) badge.push(`${apps.length} app${apps.length > 1 ? 's' : ''}`);
-      if (mods.length) badge.push(`${mods.length} mod${mods.length > 1 ? 's' : ''}`);
+      if (apps.length)
+        badge.push(`${apps.length} app${apps.length > 1 ? 's' : ''}`);
+      if (mods.length)
+        badge.push(`${mods.length} mod${mods.length > 1 ? 's' : ''}`);
 
-      html += `<div class="author-section">`;
+      const sectionId = `author-${this.authorSlug(author)}`;
+      html += `<div class="author-section" id="${sectionId}">`;
       html += `<div class="author-section-header">`;
-      html += `<span class="author-section-name">${this.escapeHtml(author)}</span>`;
+      html +=
+          `<span class="author-section-name">${this.escapeHtml(author)}</span>`;
       html += `<span class="author-section-badge">${badge.join(', ')}</span>`;
       html += `<span class="author-section-toggle">&#9660;</span>`;
       html += `</div>`;
@@ -303,15 +323,21 @@ class LilkaRepository {
       html += `<div class="author-items-grid">`;
 
       for (const item of items) {
-        const iconPath = item.icon ? `${item.type}/${item.path}/static/${item.icon}` : '';
+        const iconPath =
+            item.icon ? `${item.type}/${item.path}/static/${item.icon}` : '';
         const typeLabel = item.type === 'apps' ? 'App' : 'Mod';
-        html += `<div class="author-item-card" data-item-type="${item.type}" data-item-path="${this.escapeHtml(item.path)}">`;
+        html += `<div class="author-item-card" data-item-type="${
+            item.type}" data-item-path="${this.escapeHtml(item.path)}">`;
         if (item.icon) {
-          html += `<img src="${iconPath}" alt="${this.escapeHtml(item.name)}" class="icon" onerror="this.style.display='none'">`;
+          html += `<img src="${iconPath}" alt="${
+              this.escapeHtml(
+                  item.name)}" class="icon" onerror="this.style.display='none'">`;
         }
         html += `<h3>${this.escapeHtml(item.name)}</h3>`;
-        html += `<span class="author-item-type type-${item.type}">${typeLabel}</span>`;
-        html += `<div class="short-desc">${this.escapeHtml(item.short_description)}</div>`;
+        html += `<span class="author-item-type type-${item.type}">${
+            typeLabel}</span>`;
+        html += `<div class="short-desc">${
+            this.escapeHtml(item.short_description)}</div>`;
         html += `</div>`;
       }
 
@@ -423,6 +449,7 @@ class LilkaRepository {
     const iconPath =
         `${this.currentType}/${manifestName}/static/${manifest.icon}`;
 
+    const authorId = this.authorSlug(manifest.author);
     card.innerHTML = `
             ${
         manifest.icon ?
@@ -431,10 +458,24 @@ class LilkaRepository {
                     .name}" class="icon" onerror="this.style.display='none'">` :
             ''}
             <h3>${this.escapeHtml(manifest.name)}</h3>
-            <div class="author">${this.escapeHtml(manifest.author)}</div>
+            <div class="author"><a href="?type=authors&author=${
+        encodeURIComponent(
+            manifest.author)}" class="author-link" data-author="${
+        this.escapeHtml(
+            manifest.author)}">${this.escapeHtml(manifest.author)}</a></div>
             <div class="short-desc">${
         this.escapeHtml(manifest.short_description)}</div>
         `;
+
+    // Author link click — navigate to authors page
+    const authorLink = card.querySelector('.author-link');
+    if (authorLink) {
+      authorLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.navigateToAuthor(manifest.author);
+      });
+    }
 
     card.addEventListener('click', () => {
       // Track card clicks to view details
@@ -564,8 +605,11 @@ class LilkaRepository {
         filesSection += `
                     <div class="modal-section">
                         <h3>📦 Package ZIP</h3>
-                        <p><strong>File:</strong> ${this.escapeHtml(manifest.package)}</p>
-                        <a href="${packageDownloadPath}" download class="download-btn" data-umami-event="download-package-zip" data-umami-event-item="${this.escapeHtml(manifest.name)}">⬇️ Download ZIP</a>
+                        <p><strong>File:</strong> ${
+            this.escapeHtml(manifest.package)}</p>
+                        <a href="${
+            packageDownloadPath}" download class="download-btn" data-umami-event="download-package-zip" data-umami-event-item="${
+            this.escapeHtml(manifest.name)}">⬇️ Download ZIP</a>
                     </div>
                 `;
       }
@@ -629,7 +673,11 @@ class LilkaRepository {
     modalBody.innerHTML = `
             <div class="modal-header">
                 <h2>${this.escapeHtml(manifest.name)}</h2>
-                <div class="author">${this.escapeHtml(manifest.author)}</div>
+                <div class="author"><a href="?type=authors&author=${
+        encodeURIComponent(
+            manifest.author)}" class="author-link" data-author="${
+        this.escapeHtml(
+            manifest.author)}">${this.escapeHtml(manifest.author)}</a></div>
             </div>
             ${
         manifest.icon ?
@@ -680,6 +728,16 @@ class LilkaRepository {
           this.openLightbox(index);
         });
       });
+
+      // Add click handler for author link in modal
+      const modalAuthorLink = modalBody.querySelector('.author-link');
+      if (modalAuthorLink) {
+        modalAuthorLink.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          this.navigateToAuthor(modalAuthorLink.dataset.author);
+        });
+      }
     }, 100);
   }
 
@@ -838,6 +896,36 @@ class LilkaRepository {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+  }
+
+  authorSlug(author) {
+    return (author || '').replace(/[^a-zA-Z0-9_-]/g, '_').toLowerCase();
+  }
+
+  async navigateToAuthor(author) {
+    // Close modal if open
+    document.getElementById('modal').style.display = 'none';
+
+    // Load authors page
+    await this.showAuthors();
+
+    // Scroll to the author section & highlight it
+    const sectionId = `author-${this.authorSlug(author)}`;
+    const section = document.getElementById(sectionId);
+    if (section) {
+      // Make sure it's not collapsed
+      section.classList.remove('collapsed');
+      section.scrollIntoView({behavior: 'smooth', block: 'start'});
+      section.classList.add('author-highlight');
+      setTimeout(() => section.classList.remove('author-highlight'), 2000);
+    }
+
+    // Update URL
+    const params = new URLSearchParams();
+    params.set('type', 'authors');
+    params.set('author', author);
+    window.history.pushState(
+        {type: 'authors', author}, '', `?${params.toString()}`);
   }
 }
 
