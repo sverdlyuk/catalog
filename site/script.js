@@ -623,6 +623,59 @@ class LilkaRepository {
             `;
     }
 
+    // Build security section
+    let securitySection = '';
+    if (manifest.security && manifest.security.files && manifest.security.files.length > 0) {
+      const sec = manifest.security;
+      const scanDate = sec.scan_date ? new Date(sec.scan_date).toLocaleString() : 'N/A';
+      const allClean = sec.files.every(f => !f.av_scan || f.av_scan.status === 'clean');
+      const hasAvScan = sec.clamav_available && sec.files.some(f => f.av_scan);
+
+      let overallBadge;
+      if (hasAvScan) {
+        overallBadge = allClean
+          ? '<span class="security-badge security-clean">✅ All files clean</span>'
+          : '<span class="security-badge security-infected">⚠️ Threats detected</span>';
+      } else {
+        overallBadge = '<span class="security-badge security-noav">🔒 Checksums only</span>';
+      }
+
+      securitySection = `
+        <div class="modal-section security-section">
+          <h3>🛡️ Security</h3>
+          <div class="security-header">
+            ${overallBadge}
+            <span class="security-date">Scanned: ${this.escapeHtml(scanDate)}</span>
+          </div>
+          <div class="security-files">
+            ${sec.files.map(f => {
+              const avBadge = f.av_scan
+                ? (f.av_scan.status === 'clean'
+                    ? '<span class="security-badge-sm security-clean">✅ Clean</span>'
+                    : f.av_scan.status === 'infected'
+                      ? '<span class="security-badge-sm security-infected">❌ ' + this.escapeHtml(f.av_scan.detail) + '</span>'
+                      : '<span class="security-badge-sm security-noav">' + this.escapeHtml(f.av_scan.detail) + '</span>')
+                : '';
+              return `
+                <div class="security-file-item">
+                  <div class="security-file-name">
+                    <strong>${this.escapeHtml(f.file)}</strong>
+                    ${avBadge}
+                  </div>
+                  <div class="security-file-details">
+                    <span class="security-hash" title="SHA-256 checksum">
+                      🔑 <code>${f.sha256 ? f.sha256.substring(0, 16) + '…' : 'N/A'}</code>
+                      ${f.sha256 ? '<button class="copy-hash-btn" data-hash="' + f.sha256 + '" title="Copy full SHA-256">📋</button>' : ''}
+                    </span>
+                    <span class="security-size">${f.size ? (f.size / 1024).toFixed(1) + ' KB' : ''}</span>
+                  </div>
+                </div>`;
+            }).join('')}
+          </div>
+        </div>
+      `;
+    }
+
     // Parse sources
     const sources = this.parseJsonString(manifest.sources);
     const sourcesSection = sources ?
@@ -707,6 +760,7 @@ class LilkaRepository {
             ` :
             ''}
             ${filesSection}
+            ${securitySection}
             ${sourcesSection}
         `;
 
@@ -738,6 +792,19 @@ class LilkaRepository {
           this.navigateToAuthor(modalAuthorLink.dataset.author);
         });
       }
+
+      // Add click handlers for copy-hash buttons
+      document.querySelectorAll('.copy-hash-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          const hash = btn.dataset.hash;
+          navigator.clipboard.writeText(hash).then(() => {
+            const original = btn.textContent;
+            btn.textContent = '✓';
+            setTimeout(() => btn.textContent = original, 1500);
+          });
+        });
+      });
     }, 100);
   }
 

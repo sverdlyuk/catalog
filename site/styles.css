@@ -625,6 +625,133 @@ main {
     flex: 1;
 }
 
+/* Security Section */
+.security-section {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem;
+    background-color: var(--surface-light);
+}
+
+.security-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.security-date {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.security-badge {
+    display: inline-block;
+    padding: 0.3rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.security-badge-sm {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-left: 0.5rem;
+}
+
+.security-clean {
+    background-color: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.security-infected {
+    background-color: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.security-noav {
+    background-color: rgba(156, 163, 175, 0.15);
+    color: var(--text-muted);
+    border: 1px solid rgba(156, 163, 175, 0.3);
+}
+
+.security-files {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.security-file-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.5rem 0.75rem;
+    background-color: var(--surface);
+    border-radius: calc(var(--radius) / 2);
+    border: 1px solid var(--border);
+}
+
+.security-file-name {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+
+.security-file-details {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.security-hash {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.security-hash code {
+    font-size: 0.75rem;
+    background-color: var(--surface-light);
+    padding: 0.1rem 0.35rem;
+    border-radius: 3px;
+    font-family: monospace;
+    word-break: break-all;
+}
+
+.copy-hash-btn {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    padding: 0.1rem 0.3rem;
+    transition: all 0.2s ease;
+    color: var(--text-muted);
+}
+
+.copy-hash-btn:hover {
+    background-color: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.security-size {
+    font-size: 0.75rem;
+    white-space: nowrap;
+}
+
 /* Footer */
 footer {
     background-color: var(--surface);
