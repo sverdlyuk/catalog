@@ -1,12 +1,12 @@
-name: Meowui (C/C++)
+name: Pixeler (C/C++)
 sources:
   type: git
   location:
-    origin: https://github.com/Kolodieiev/meowui
-short_description: Фреймворк для розробки прошивок для ESP32 та ESP32-S3
+    origin: https://github.com/Kolodieiev/pixeler4lilkav2
+short_description: Альтернативна прошивка для Lilka v2
 description: "@DESCRIPTION.md"
 author: "@Kolodieiev"
-license: GPL-3.0
+license: Apache-2.0
 keira_version: 1.0.0
 icon: image1.png
 screenshots:
