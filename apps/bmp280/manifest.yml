@@ -6,7 +6,7 @@ sources:
 entryfile:
   type: lua
   location:
-    origin: https://raw.githubusercontent.com/sverdlyuk/bmp280-lilka-lua/refs/heads/main/bmp280_lilka.lua
+    origin: https://raw.githubusercontent.com/sverdlyuk/bmp280-lilka-lua/refs/heads/main/bmp280%2Bbme280_lilka.lua
 short_description: Застосунок для виміру температури та тиску за допомогою сенсора BMP280
 description: "@DESCRIPTION.md"
 author: "@sverdlyuk"
