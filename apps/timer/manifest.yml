@@ -1,0 +1,19 @@
+name: Таймер
+sources:
+  type: git
+  location:
+    origin: https://github.com/sverdlyuk/timer
+entryfile:
+  type: archive
+  location:
+    origin: https://raw.githubusercontent.com/sverdlyuk/timer/refs/heads/main/timer.lua
+short_description: Простий таймер зворотного відліку зі звуковим сповіщенням
+description: "@DESCRIPTION.md"
+author: "@sverdlyuk"
+license: MIT
+keira_version: 1.0.0
+icon: image.png
+screenshots:
+  - image.png
+  - image2.png
+
