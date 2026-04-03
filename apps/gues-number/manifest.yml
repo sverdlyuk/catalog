@@ -1,0 +1,18 @@
+name: Вгадай число
+sources:
+  type: git
+  location:
+    origin: https://github.com/sverdlyuk/gues-number
+entryfile:
+  type: archive
+  location:
+    origin: https://raw.githubusercontent.com/sverdlyuk/gues-number/refs/heads/main/gues-number.lua
+short_description: Проста але цікава гра з вгадуванням числа  
+description: "@DESCRIPTION.md"
+author: "@sverdlyuk"
+license: MIT
+keira_version: 1.0.0
+icon: img.png
+screenshots:
+  - img.png
+  - img2.png
