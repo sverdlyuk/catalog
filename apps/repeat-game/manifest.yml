@@ -7,7 +7,7 @@ entryfile:
   type: archive
   location:
     origin: https://raw.githubusercontent.com/sverdlyuk/repeat-game/refs/heads/main/repeat.lua
-short_description: Класична гра на пам’ять: повтори послідовність — щоразу довшу.
+short_description: Класична гра на пам’ять, повтори послідовність — щоразу довшу.
 description: "@DESCRIPTION.md"
 author: "@sverdlyuk"
 license: MIT
