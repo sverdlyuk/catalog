@@ -4,7 +4,7 @@ sources:
   location:
     origin: https://github.com/sverdlyuk/gues-number
 entryfile:
-  type: archive
+  type: lua
   location:
     origin: https://raw.githubusercontent.com/sverdlyuk/gues-number/refs/heads/main/gues-number.lua
 short_description: Проста але цікава гра з вгадуванням числа  
