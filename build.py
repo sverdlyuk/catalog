@@ -5,6 +5,10 @@ import requests
 import argparse
 import html
 import json
+import zipfile
+import hashlib
+import subprocess
+import shutil
 from PIL import Image
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import threading
@@ -19,7 +23,15 @@ args.add_argument("--build", help="Build json files for mods and apps", action='
 args.add_argument("--shortjson", help="Build short json files for mods and apps", action='store_true', default=False)
 args.add_argument("--workers", help="Number of parallel workers", type=int, default=8)
 args.add_argument("--verbose", "-v", help="Verbose output", action='store_true', default=False)
+args.add_argument("--antivirus", help="Enable local ClamAV antivirus scanning for downloadable files", action='store_true', default=False)
 args = args.parse_args()
+
+# ============================================================================
+# Check if ClamAV is available locally (prefer clamdscan daemon for speed)
+# ============================================================================
+CLAMDSCAN_AVAILABLE = shutil.which('clamdscan') is not None
+CLAMSCAN_AVAILABLE = shutil.which('clamscan') is not None
+CLAMAV_AVAILABLE = CLAMDSCAN_AVAILABLE or CLAMSCAN_AVAILABLE
 
 # ============================================================================
 # Thread-safe Progress Tracker with Live Display
@@ -328,6 +340,153 @@ def compress_image(image_path, max_width=MAX_IMAGE_WIDTH, max_height=MAX_IMAGE_H
     except Exception as e:
         logger.warning(f"Could not compress image {image_path}: {e}")
 
+# ============================================================================
+# Security: SHA-256 / MD5 Checksums & Local ClamAV Scanning
+# ============================================================================
+
+def compute_sha256(filepath):
+    """Compute SHA-256 hash of a file."""
+    sha256 = hashlib.sha256()
+    try:
+        with open(filepath, 'rb') as f:
+            for chunk in iter(lambda: f.read(8192), b''):
+                sha256.update(chunk)
+        return sha256.hexdigest()
+    except Exception as e:
+        logger.warning(f"Could not compute SHA-256 for {filepath}: {e}")
+        return None
+
+
+def compute_md5(filepath):
+    """Compute MD5 hash of a file."""
+    md5 = hashlib.md5()
+    try:
+        with open(filepath, 'rb') as f:
+            for chunk in iter(lambda: f.read(8192), b''):
+                md5.update(chunk)
+        return md5.hexdigest()
+    except Exception as e:
+        logger.warning(f"Could not compute MD5 for {filepath}: {e}")
+        return None
+
+
+def scan_file_clamav(filepath):
+    """Scan a single file with ClamAV. Prefers clamdscan (daemon) for speed,
+    falls back to clamscan if the daemon is unavailable.
+    Possible statuses: 'clean', 'infected', 'error', 'unavailable'."""
+    if not CLAMAV_AVAILABLE:
+        return {"status": "unavailable", "detail": "ClamAV not installed"}
+
+    # Prefer clamdscan (daemon client) — avoids reloading the signature DB
+    # on every invocation (~30s saved per file).
+    if CLAMDSCAN_AVAILABLE:
+        cmd = ['clamdscan', '--no-summary', '--infected', filepath]
+    else:
+        cmd = ['clamscan', '--no-summary', '--infected', filepath]
+
+    try:
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, timeout=120
+        )
+        if result.returncode == 0:
+            return {"status": "clean", "detail": "No threats detected"}
+        elif result.returncode == 1:
+            # Virus found
+            detail = result.stdout.strip() or "Threat detected"
+            return {"status": "infected", "detail": detail}
+        elif result.returncode == 2 and CLAMDSCAN_AVAILABLE:
+            # clamdscan returns 2 when the daemon is unreachable — fall back
+            logger.warning("clamd not running, falling back to clamscan")
+            if CLAMSCAN_AVAILABLE:
+                return _scan_file_clamscan_fallback(filepath)
+            return {"status": "error", "detail": "clamd not running and clamscan not found"}
+        else:
+            return {"status": "error", "detail": result.stderr.strip()[:200]}
+    except subprocess.TimeoutExpired:
+        return {"status": "error", "detail": "Scan timed out"}
+    except Exception as e:
+        return {"status": "error", "detail": str(e)[:200]}
+
+
+def _scan_file_clamscan_fallback(filepath):
+    """Fallback: scan with standalone clamscan (slow — loads DB each time)."""
+    try:
+        result = subprocess.run(
+            ['clamscan', '--no-summary', '--infected', filepath],
+            capture_output=True, text=True, timeout=120
+        )
+        if result.returncode == 0:
+            return {"status": "clean", "detail": "No threats detected"}
+        elif result.returncode == 1:
+            detail = result.stdout.strip() or "Threat detected"
+            return {"status": "infected", "detail": detail}
+        else:
+            return {"status": "error", "detail": result.stderr.strip()[:200]}
+    except subprocess.TimeoutExpired:
+        return {"status": "error", "detail": "Scan timed out"}
+    except Exception as e:
+        return {"status": "error", "detail": str(e)[:200]}
+
+
+def generate_security_info(output_dir, manifest, item_type):
+    """Generate SHA-256 checksums and optional ClamAV scan results for all
+    downloadable files. Returns a security dict to embed in index.json."""
+    static_path = os.path.join(output_dir, "static")
+    security = {
+        "scan_date": datetime.now().isoformat(),
+        "clamav_available": CLAMAV_AVAILABLE and args.antivirus,
+        "files": []
+    }
+
+    # Collect paths of downloadable files
+    files_to_check = []
+
+    if item_type == "app":
+        ef = manifest.get('entryfile') or manifest.get('executionfile')
+        if ef and ef.get('location'):
+            files_to_check.append(ef['location'])
+        for f in manifest.get('files', []):
+            loc = f.get('location') if isinstance(f, dict) else None
+            if loc:
+                files_to_check.append(loc)
+    elif item_type == "mod":
+        for f in manifest.get('modfiles', []):
+            loc = f.get('location') if isinstance(f, dict) else None
+            if loc:
+                files_to_check.append(loc)
+
+    # Also check the package zip
+    package_path = os.path.join(output_dir, "package.zip")
+    if os.path.exists(package_path):
+        files_to_check.append("__package__")  # sentinel
+
+    for entry in files_to_check:
+        if entry == "__package__":
+            fpath = package_path
+            fname = "package.zip"
+        else:
+            fname = os.path.basename(entry)
+            fpath = os.path.join(static_path, fname)
+
+        if not os.path.exists(fpath):
+            continue
+
+        file_info = {
+            "file": fname,
+            "size": os.path.getsize(fpath),
+            "sha256": compute_sha256(fpath),
+            "md5": compute_md5(fpath)
+        }
+
+        if args.antivirus and CLAMAV_AVAILABLE:
+            scan_result = scan_file_clamav(fpath)
+            file_info["av_scan"] = scan_result
+
+        security["files"].append(file_info)
+
+    return security
+
+
 def download_file(path, output_dir) -> str:
     url = path['origin'] if isinstance(path, dict) else path
     response = requests.head(url)
@@ -451,6 +610,58 @@ def gen_static_folder(manifest, type, output_dir) -> dict:
 
     return manifest
 
+
+def create_package_zip(manifest, type, output_dir) -> str:
+    """Create package ZIP with manifest and downloadable files."""
+    package_filename = "package.zip"
+    package_path = os.path.join(output_dir, package_filename)
+    static_path = os.path.join(output_dir, "static")
+    source_manifest_path = os.path.join(type + "s", manifest['path'], "manifest.yml")
+
+    files_to_add = []
+
+    if type == "app":
+        if manifest.get('entryfile') and manifest['entryfile'].get('location'):
+            files_to_add.append(manifest['entryfile']['location'])
+        elif manifest.get('executionfile') and manifest['executionfile'].get('location'):
+            files_to_add.append(manifest['executionfile']['location'])
+
+        if manifest.get('files'):
+            for file in manifest['files']:
+                location = file.get('location') if isinstance(file, dict) else None
+                if location:
+                    files_to_add.append(location)
+
+    elif type == "mod":
+        if manifest.get('modfiles'):
+            for file in manifest['modfiles']:
+                location = file.get('location') if isinstance(file, dict) else None
+                if location:
+                    files_to_add.append(location)
+
+    with zipfile.ZipFile(package_path, 'w', zipfile.ZIP_DEFLATED) as package_zip:
+        if os.path.exists(source_manifest_path):
+            package_zip.write(source_manifest_path, arcname="manifest.yml")
+
+        added_files = set()
+        for item in files_to_add:
+            location = item
+            if isinstance(item, dict):
+                location = item.get('origin')
+            if not location:
+                continue
+
+            filename = os.path.basename(location)
+            if filename in added_files:
+                continue
+
+            file_path = os.path.join(static_path, filename)
+            if os.path.exists(file_path):
+                package_zip.write(file_path, arcname=filename)
+                added_files.add(filename)
+
+    return package_filename
+
 def process_manifest(manifest, type) -> None:
     output_dir = os.path.join("./build", type+"s", manifest['path'])
 
@@ -459,6 +670,7 @@ def process_manifest(manifest, type) -> None:
         os.makedirs(output_dir, exist_ok=True)
         
         manifest = gen_static_folder(manifest, type, output_dir)
+        package_filename = create_package_zip(manifest, type, output_dir)
 
         if type == "app":
             short_data = {
@@ -511,6 +723,13 @@ def process_manifest(manifest, type) -> None:
             # Only include modfiles if they exist
             if manifest.get("modfiles"):
                 full_data["modfiles"] = manifest["modfiles"]
+
+        if package_filename:
+            full_data["package"] = package_filename
+
+        # Generate security info (SHA-256 checksums + optional ClamAV scan)
+        security_info = generate_security_info(output_dir, manifest, type)
+        full_data["security"] = security_info
         
         with open(os.path.join(output_dir, 'index.json'), 'w', encoding='utf-8') as file:
             json.dump(full_data, file, indent=2, ensure_ascii=False)
@@ -876,6 +1095,56 @@ def process_mods_folder(mods):
     progress.final_summary()
     return sorted(results)
         
+def gen_authors_index(apps, mods) -> None:
+    """Generate authors.json grouping all manifests by author."""
+    authors = {}
+
+    for app in apps:
+        manifest_path = os.path.join("./build", "apps", app, "index.json")
+        if os.path.exists(manifest_path):
+            try:
+                with open(manifest_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                author = data.get("author", "Unknown")
+                authors.setdefault(author, []).append({
+                    "name": data.get("name", app),
+                    "short_description": data.get("short_description", ""),
+                    "icon": data.get("icon", ""),
+                    "path": app,
+                    "type": "apps"
+                })
+            except Exception as e:
+                logger.warning(f"Failed to read manifest for authors index: {e}", app)
+
+    for mod in mods:
+        manifest_path = os.path.join("./build", "mods", mod, "index.json")
+        if os.path.exists(manifest_path):
+            try:
+                with open(manifest_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                author = data.get("author", "Unknown")
+                authors.setdefault(author, []).append({
+                    "name": data.get("name", mod),
+                    "short_description": data.get("short_description", ""),
+                    "icon": data.get("icon", ""),
+                    "path": mod,
+                    "type": "mods"
+                })
+            except Exception as e:
+                logger.warning(f"Failed to read manifest for authors index: {e}", mod)
+
+    # Sort authors alphabetically, sort items within each author
+    sorted_authors = {}
+    for author in sorted(authors.keys(), key=lambda a: a.lower()):
+        sorted_authors[author] = sorted(authors[author], key=lambda x: x["name"].lower())
+
+    output_path = os.path.join("./build", "authors.json")
+    with open(output_path, 'w', encoding='utf-8') as f:
+        json.dump(sorted_authors, f, indent=2, ensure_ascii=False)
+
+    logger.success(f"Generated authors.json with {len(sorted_authors)} authors")
+
+
 def main():
     start_time = time.time()
     
@@ -886,6 +1155,11 @@ def main():
     print(f"  📅 Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"  👷 Workers: {args.workers}")
     print(f"  🔧 Build mode: {'FULL BUILD' if args.build else 'VALIDATION ONLY'}")
+    print(f"  🛡️  Antivirus: {'ClamAV ENABLED' if args.antivirus else 'DISABLED (use --antivirus)'}")
+    if args.antivirus and not CLAMAV_AVAILABLE:
+        print(f"  ⚠️  ClamAV not found! Install with: sudo apt install clamav clamav-daemon")
+    elif args.antivirus and not CLAMDSCAN_AVAILABLE:
+        print(f"  ⚠️  clamdscan not found — using clamscan (slow). Install clamav-daemon for faster scans.")
     print(f"{'─' * 60}\n")
     
     apps: list[str] = scan_apps_folder()
@@ -902,6 +1176,7 @@ def main():
         print(f"\n\033[94mℹ️  Generating index files...\033[0m")
         gen_json_index_manifests(processed_apps, "app")
         gen_json_index_manifests(processed_mods, "mod")
+        gen_authors_index(processed_apps, processed_mods)
         print(f"\033[92m✅ Index files generated\033[0m")
     
     # Write warnings to JSON file

@@ -1,7 +1,8 @@
 name: Лілка AI
-keira_version: 1.0.0
+keira_version: 1.0.1
 short_description: OpenAI чат для Лілки
 description: "@DESCRIPTION.md"
+changelog: "@CHANGELOG.md"
 author: "@aisaiev"
 license: MIT
 icon: icon.png
@@ -16,4 +17,4 @@ sources:
 executionfile:
   type: binary
   location:
-    origin: https://github.com/aisaiev/lilka-ai/releases/download/v1/lilka-ai.bin
+    origin: https://github.com/aisaiev/lilka-ai/releases/download/v1.0.1/lilka-ai.bin

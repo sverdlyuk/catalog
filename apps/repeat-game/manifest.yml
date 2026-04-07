@@ -1,0 +1,18 @@
+name: Повтори комбінацію
+sources:
+  type: git
+  location:
+    origin: https://github.com/sverdlyuk/repeat-game
+entryfile:
+  type: archive
+  location:
+    origin: https://raw.githubusercontent.com/sverdlyuk/repeat-game/refs/heads/main/repeat.lua
+short_description: Класична гра на пам’ять, повтори послідовність — щоразу довшу.
+description: "@DESCRIPTION.md"
+author: "@sverdlyuk"
+license: MIT
+keira_version: 1.0.0
+icon: img.png
+screenshots:
+  - img.png
+  - img2.png

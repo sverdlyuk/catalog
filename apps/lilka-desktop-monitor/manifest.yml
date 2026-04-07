@@ -1,7 +1,8 @@
 name: Lilka Desktop Monitor
-keira_version: 1.0.0
+keira_version: 1.0.1
 short_description: Stream your computer screen to Lilka over WiFi
 description: "@DESCRIPTION.md"
+changelog: "@CHANGELOG.md"
 author: "@aisaiev"
 license: MIT
 icon: image.png
@@ -14,4 +15,4 @@ sources:
 executionfile:
   type: binary
   location:
-    origin: https://github.com/aisaiev/lilka-desktop-monitor/releases/download/v1.0.0/lilka-desktop-monitor.bin
+    origin: https://github.com/aisaiev/lilka-desktop-monitor/releases/download/v1.0.1/lilka-desktop-monitor.bin

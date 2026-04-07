@@ -38,9 +38,24 @@ jobs:
           python -m pip install --upgrade pip
           pip install pyyaml requests pillow
 
+      - name: Install and start ClamAV daemon
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clamav clamav-daemon
+          sudo systemctl stop clamav-freshclam || true
+          sudo freshclam
+          sudo systemctl start clamav-daemon
+          # Wait for the daemon to be ready (loads signatures into memory once)
+          for i in $(seq 1 30); do
+            clamdscan --ping 1 2>/dev/null && break
+            echo "Waiting for clamd to start... ($i/30)"
+            sleep 2
+          done
+          clamdscan --version
+
       - name: Build JSON files from manifests
         run: |
-          python3 build.py --build
+          python3 build.py --build --antivirus
 
       - name: Copy static site files
         run: |

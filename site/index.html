@@ -17,6 +17,7 @@
         <div class="container">
             <button class="tab-button active" data-type="apps">Apps</button>
             <button class="tab-button" data-type="mods">Mods</button>
+            <button class="tab-button" data-type="authors">Authors</button>
             <button class="tab-button" data-type="docs">Documentation</button>
         </div>
     </nav>
@@ -41,6 +42,8 @@
             </div>
         </div>
 
+        <div id="authors" class="authors-content" style="display: none;"></div>
+
         <div id="docs" class="docs-content" style="display: none;"></div>
     </main>
 
@@ -62,9 +65,9 @@
     <footer>
         <div class="container">
             <div class="footer-links">
-                <a href="https://discord.gg/HU68TaKCu6" target="_blank" rel="noopener noreferrer">💬 Discord</a>
-                <a href="https://docs.lilka.dev" target="_blank" rel="noopener noreferrer">📚 Documentation</a>
-                <a href="https://github.com/lilka-dev/catalog" target="_blank" rel="noopener noreferrer">🐙 GitHub</a>
+                <a href="https://discord.gg/HU68TaKCu6" target="_blank" rel="noopener noreferrer" data-umami-event="footer-link-discord">💬 Discord</a>
+                <a href="https://docs.lilka.dev" target="_blank" rel="noopener noreferrer" data-umami-event="footer-link-docs">📚 Documentation</a>
+                <a href="https://github.com/lilka-dev/catalog" target="_blank" rel="noopener noreferrer" data-umami-event="footer-link-github">🐙 GitHub</a>
             </div>
             <p class="footer-copyright">© 2026 Lilka Project</p>
         </div>
@@ -72,5 +75,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="script.js"></script>
+    <script defer src="https://cloud.umami.is/script.js" data-website-id="70fcef77-656a-4997-80c4-479960fb6530"></script>
 </body>
 </html>

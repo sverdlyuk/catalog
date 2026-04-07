@@ -24,7 +24,7 @@ echo ""
 # Step 1: Build JSON files
 echo -e "${YELLOW}Step 1/3: Building JSON files from manifests...${NC}"
 cd "$PROJECT_DIR"
-python3 build.py --build
+python3 build.py --build --antivirus
 
 if [ $? -eq 0 ]; then
     echo -e "${GREEN}✓ JSON files built successfully${NC}"
