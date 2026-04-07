@@ -544,6 +544,61 @@ def gen_json_index_manifests(manifests, type) -> None:
 def check_folder_sturcture(folder) -> bool:
     return os.path.isfile(os.path.join(folder, 'manifest.yml'))
 
+def infer_type_from_extension(filename: str) -> str:
+    """Infer the expected entryfile type from the file extension.
+    
+    Returns:
+        'lua' for .lua files
+        'archive' for .zip, .tar, .tar.gz, .tgz files
+        'binary' for .bin files
+        None if extension is unknown
+    """
+    filename_lower = filename.lower()
+    if filename_lower.endswith('.lua'):
+        return 'lua'
+    elif filename_lower.endswith(('.zip', '.tar', '.tar.gz', '.tgz')):
+        return 'archive'
+    elif filename_lower.endswith('.bin'):
+        return 'binary'
+    return None
+
+def validate_entryfile_type(src, entryfile: dict, item_type: str) -> None:
+    """Validate that the declared entryfile type matches the actual file extension.
+    
+    Args:
+        src: The source app/mod name for warning messages
+        entryfile: The entryfile dict containing 'type' and 'location'
+        item_type: 'app' or 'mod'
+    """
+    if not entryfile:
+        return
+    
+    declared_type = entryfile.get('type')
+    location = entryfile.get('location')
+    
+    if not declared_type or not location:
+        return
+    
+    # Handle location as dict with 'origin' or as plain string
+    if isinstance(location, dict):
+        filename = location.get('origin', '')
+    else:
+        filename = str(location)
+    
+    # Get the filename from URL or path
+    if filename:
+        filename = filename.split('/')[-1].split('?')[0]  # Handle URLs with query params
+    
+    inferred_type = infer_type_from_extension(filename)
+    
+    if inferred_type and inferred_type != declared_type:
+        add_warning(
+            src, 
+            "type_mismatch", 
+            f"Entryfile type mismatch: declared '{declared_type}' but file '{filename}' suggests '{inferred_type}'",
+            item_type
+        )
+
 def validate_app_files(src, manifest, type) -> bool:
     """Validate that all required files exist. Returns True if valid, False otherwise.
     Only returns False for critical errors that should skip the app/mod.
@@ -554,6 +609,11 @@ def validate_app_files(src, manifest, type) -> bool:
     results_lock = threading.Lock()
     
     logger.debug(f"Validating files...", src)
+    
+    # Validate entryfile type matches file extension
+    if type == "app":
+        entryfile = manifest.get('entryfile') or manifest.get('executionfile')
+        validate_entryfile_type(src, entryfile, type)
     
     # Local file checks (fast, no need to parallelize)
     if manifest.get('icon'):
