@@ -32,6 +32,44 @@ class LilkaRepository {
       return;
     }
 
+    // Handle examples page
+    if (type === 'examples') {
+      this.currentType = type;
+      this.updateActiveTab('examples');
+      const examplesContainer = document.getElementById('examples');
+      document.getElementById('content').style.display = 'none';
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('error').style.display = 'none';
+      document.getElementById('docs').style.display = 'none';
+      document.getElementById('authors').style.display = 'none';
+      examplesContainer.style.display = 'block';
+
+      const exPath = params.get('path') || '';
+      this.examplesCurrentPath = exPath;
+
+      // Only re-render browser skeleton if not already rendered
+      if (!document.getElementById('examples-body')) {
+        this.renderExamplesBrowser(examplesContainer);
+      }
+
+      // Determine if this is a file or directory
+      if (exPath && this._examplesFileCache && this._examplesFileCache[exPath]) {
+        const cached = this._examplesFileCache[exPath];
+        await this.viewExampleFile(exPath, cached.name, cached.download, true);
+      } else {
+        await this.loadExamplesDir(exPath, true);
+      }
+      window.scrollTo({top: 0});
+      return;
+    }
+
+    // Handle docs page
+    if (type === 'docs') {
+      this.currentType = type;
+      await this.showDocumentation();
+      return;
+    }
+
     // Handle authors page
     if (type === 'authors') {
       this.currentType = type;
@@ -72,11 +110,15 @@ class LilkaRepository {
 
     // Show/hide appropriate content
     document.getElementById('content').style.display =
-        (type === 'docs' || type === 'authors') ? 'none' : 'block';
+        (type === 'docs' || type === 'authors' || type === 'examples') ?
+        'none' :
+        'block';
     document.getElementById('docs').style.display =
         type === 'docs' ? 'block' : 'none';
     document.getElementById('authors').style.display =
         type === 'authors' ? 'block' : 'none';
+    document.getElementById('examples').style.display =
+        type === 'examples' ? 'block' : 'none';
   }
 
   async openDirectItem(type, itemName) {
@@ -96,13 +138,18 @@ class LilkaRepository {
     }
   }
 
-  updateURL(type = null, page = null, itemName = null) {
+  updateURL(type = null, page = null, itemName = null, examplesPath = null) {
     const params = new URLSearchParams();
 
     if (itemName) {
       // Direct item link: ?type=apps&item=ble.app
       params.set('type', type);
       params.set('item', itemName);
+    } else if (type === 'examples') {
+      params.set('type', 'examples');
+      if (examplesPath) {
+        params.set('path', examplesPath);
+      }
     } else if (type) {
       // Page navigation: ?type=apps&page=1
       params.set('type', type);
@@ -112,7 +159,7 @@ class LilkaRepository {
     }
 
     const url = params.toString() ? `?${params.toString()}` : '/';
-    window.history.pushState({type, page, itemName}, '', url);
+    window.history.pushState({type, page, itemName, examplesPath}, '', url);
   }
 
   setupLightboxListeners() {
@@ -155,6 +202,8 @@ class LilkaRepository {
           this.showDocumentation();
         } else if (type === 'authors') {
           this.showAuthors();
+        } else if (type === 'examples') {
+          this.showExamples();
         } else {
           this.switchType(type);
         }
@@ -241,8 +290,292 @@ class LilkaRepository {
     document.getElementById('content').style.display = 'block';
     document.getElementById('docs').style.display = 'none';
     document.getElementById('authors').style.display = 'none';
+    document.getElementById('examples').style.display = 'none';
 
     await this.loadPage();
+    window.scrollTo({top: 0});
+  }
+
+  async showExamples() {
+    this.updateActiveTab('examples');
+    document.getElementById('content').style.display = 'none';
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('error').style.display = 'none';
+    document.getElementById('docs').style.display = 'none';
+    document.getElementById('authors').style.display = 'none';
+    const examplesContainer = document.getElementById('examples');
+    examplesContainer.style.display = 'block';
+
+    this.examplesCurrentPath = '';
+    this._examplesFileCache = {};
+    this.renderExamplesBrowser(examplesContainer);
+    this.updateURL('examples', null, null, '');
+    await this.loadExamplesDir('', true);
+    window.scrollTo({top: 0});
+  }
+
+  renderExamplesBrowser(container) {
+    const REPO_URL = 'https://github.com/lilka-dev/examples';
+    container.innerHTML = `
+      <div class="examples-header">
+        <div class="examples-breadcrumb" id="examples-breadcrumb"></div>
+        <a href="${REPO_URL}" target="_blank" rel="noopener noreferrer" class="examples-repo-link">
+          🐙 View on GitHub
+        </a>
+      </div>
+      <div id="examples-body" class="examples-loading">Loading...</div>
+      <div id="examples-file-viewer" class="examples-file-viewer" style="display:none;"></div>
+    `;
+  }
+
+  renderBreadcrumb(path) {
+    const bc = document.getElementById('examples-breadcrumb');
+    if (!bc) return;
+    const parts = path ? path.split('/') : [];
+    let html = `<span class="breadcrumb-item breadcrumb-link" data-path="">📦 examples</span>`;
+    let accumulated = '';
+    for (const part of parts) {
+      accumulated += (accumulated ? '/' : '') + part;
+      html += `<span class="breadcrumb-sep">/</span>`;
+      html += `<span class="breadcrumb-item breadcrumb-link" data-path="${this.escapeHtml(accumulated)}">${this.escapeHtml(part)}</span>`;
+    }
+    bc.innerHTML = html;
+    bc.querySelectorAll('.breadcrumb-link').forEach(link => {
+      link.addEventListener('click', () => {
+        const target = link.dataset.path;
+        this.updateURL('examples', null, null, target);
+        document.getElementById('examples-file-viewer').style.display = 'none';
+        document.getElementById('examples-body').style.display = 'block';
+        this.loadExamplesDir(target, true);
+      });
+    });
+  }
+
+  async loadExamplesDir(path, skipPushState = false) {
+    this.examplesCurrentPath = path;
+    const bodyEl = document.getElementById('examples-body');
+    bodyEl.style.display = 'block';
+    bodyEl.className = 'examples-loading';
+    bodyEl.innerHTML = 'Loading...';
+    document.getElementById('examples-file-viewer').style.display = 'none';
+
+    this.renderBreadcrumb(path);
+
+    if (!skipPushState) {
+      this.updateURL('examples', null, null, path);
+    }
+
+    const apiUrl = path
+        ? `https://api.github.com/repos/lilka-dev/examples/contents/${path}`
+        : 'https://api.github.com/repos/lilka-dev/examples/contents';
+
+    try {
+      const response = await fetch(apiUrl);
+      if (!response.ok) throw new Error('Failed to load directory');
+      const contents = await response.json();
+
+      const dirs = contents.filter(i => i.type === 'dir').sort((a, b) => a.name.localeCompare(b.name));
+      const files = contents.filter(i => i.type === 'file').sort((a, b) => a.name.localeCompare(b.name));
+
+      let html = '<div class="examples-file-list">';
+
+      if (path) {
+        const parentPath = path.includes('/') ? path.substring(0, path.lastIndexOf('/')) : '';
+        html += `
+          <div class="file-list-item file-list-back" data-action="dir" data-path="${this.escapeHtml(parentPath)}">
+            <span class="file-icon">⬆️</span>
+            <span class="file-name">..</span>
+          </div>`;
+      }
+
+      for (const dir of dirs) {
+        html += `
+          <div class="file-list-item file-list-dir" data-action="dir" data-path="${this.escapeHtml(dir.path)}">
+            <span class="file-icon">📁</span>
+            <span class="file-name">${this.escapeHtml(dir.name)}</span>
+          </div>`;
+      }
+
+      for (const file of files) {
+        const sizeStr = this.formatFileSize(file.size);
+        const langIcon = this.getFileIcon(file.name);
+        html += `
+          <div class="file-list-item file-list-file" data-action="file" data-path="${this.escapeHtml(file.path)}" data-name="${this.escapeHtml(file.name)}" data-download="${this.escapeHtml(file.download_url || '')}">
+            <span class="file-icon">${langIcon}</span>
+            <span class="file-name">${this.escapeHtml(file.name)}</span>
+            <span class="file-size">${sizeStr}</span>
+          </div>`;
+      }
+
+      html += '</div>';
+      bodyEl.className = '';
+      bodyEl.innerHTML = html;
+
+      bodyEl.querySelectorAll('.file-list-item').forEach(item => {
+        item.addEventListener('click', () => {
+          const action = item.dataset.action;
+          const itemPath = item.dataset.path;
+          if (action === 'dir') {
+            this.updateURL('examples', null, null, itemPath);
+            this.loadExamplesDir(itemPath, true);
+          } else if (action === 'file') {
+            // Cache file info for back-button restoration
+            if (!this._examplesFileCache) this._examplesFileCache = {};
+            this._examplesFileCache[itemPath] = {
+              name: item.dataset.name,
+              download: item.dataset.download
+            };
+            this.updateURL('examples', null, null, itemPath);
+            this.viewExampleFile(itemPath, item.dataset.name, item.dataset.download, true);
+          }
+        });
+      });
+    } catch (error) {
+      const REPO_URL = 'https://github.com/lilka-dev/examples';
+      bodyEl.className = 'examples-error';
+      bodyEl.innerHTML = `
+        <p>📦 Could not load directory listing.</p>
+        <a href="${REPO_URL}${path ? '/tree/main/' + path : ''}" target="_blank" rel="noopener noreferrer" class="btn">Open on GitHub →</a>
+      `;
+    }
+  }
+
+  async viewExampleFile(path, name, downloadUrl, skipPushState = false) {
+    const bodyEl = document.getElementById('examples-body');
+    bodyEl.style.display = 'none';
+    const viewer = document.getElementById('examples-file-viewer');
+    viewer.style.display = 'block';
+    viewer.innerHTML = '<div class="examples-loading">Loading file...</div>';
+
+    this.renderBreadcrumb(path);
+
+    if (!skipPushState) {
+      this.updateURL('examples', null, null, path);
+    }
+
+    const REPO_URL = 'https://github.com/lilka-dev/examples';
+    const rawUrl = downloadUrl || `https://raw.githubusercontent.com/lilka-dev/examples/main/${path}`;
+
+    try {
+      const ext = name.includes('.') ? name.split('.').pop().toLowerCase() : '';
+      const imageExts = ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'svg', 'webp', 'ico'];
+
+      if (imageExts.includes(ext)) {
+        viewer.innerHTML = `
+          <div class="file-viewer-header">
+            <span class="file-viewer-name">${this.escapeHtml(name)}</span>
+            <div class="file-viewer-actions">
+              <a href="${REPO_URL}/blob/main/${path}" target="_blank" rel="noopener noreferrer" class="btn btn-sm">View on GitHub</a>
+              <a href="${rawUrl}" download="${this.escapeHtml(name)}" class="btn btn-sm">Download</a>
+            </div>
+          </div>
+          <div class="file-viewer-image">
+            <img src="${rawUrl}" alt="${this.escapeHtml(name)}">
+          </div>`;
+        return;
+      }
+
+      const response = await fetch(rawUrl);
+      if (!response.ok) throw new Error('Failed to load file');
+      const text = await response.text();
+
+      const lang = this.detectLanguage(name);
+      let highlighted;
+      if (lang && hljs.getLanguage(lang)) {
+        highlighted = hljs.highlight(text, {language: lang}).value;
+      } else {
+        highlighted = hljs.highlightAuto(text).value;
+      }
+
+      const lineCount = text.split('\n').length;
+      const lineNumbers = Array.from({length: lineCount}, (_, i) => `<span>${i + 1}</span>`).join('\n');
+
+      viewer.innerHTML = `
+        <div class="file-viewer-header">
+          <span class="file-viewer-name">${this.escapeHtml(name)}</span>
+          <span class="file-viewer-meta">${lineCount} lines · ${this.formatFileSize(text.length)}</span>
+          <div class="file-viewer-actions">
+            <button class="btn btn-sm" id="copy-code-btn">📋 Copy</button>
+            <a href="${rawUrl}" download="${this.escapeHtml(name)}" class="btn btn-sm">⬇ Download</a>
+            <a href="${REPO_URL}/blob/main/${path}" target="_blank" rel="noopener noreferrer" class="btn btn-sm">GitHub</a>
+          </div>
+        </div>
+        <div class="file-viewer-code">
+          <div class="line-numbers">${lineNumbers}</div>
+          <pre><code class="hljs">${highlighted}</code></pre>
+        </div>`;
+
+      document.getElementById('copy-code-btn')?.addEventListener('click', () => {
+        navigator.clipboard.writeText(text).then(() => {
+          const btn = document.getElementById('copy-code-btn');
+          btn.textContent = '✅ Copied!';
+          setTimeout(() => btn.textContent = '📋 Copy', 2000);
+        });
+      });
+
+      // Sync line numbers scroll with code scroll
+      const codePreEl = viewer.querySelector('.file-viewer-code pre');
+      const lineNumEl = viewer.querySelector('.line-numbers');
+      if (codePreEl && lineNumEl) {
+        codePreEl.addEventListener('scroll', () => {
+          lineNumEl.scrollTop = codePreEl.scrollTop;
+        });
+      }
+    } catch (error) {
+      viewer.innerHTML = `
+        <div class="examples-error">
+          <p>Failed to load file: ${this.escapeHtml(error.message)}</p>
+          <a href="${REPO_URL}/blob/main/${path}" target="_blank" rel="noopener noreferrer" class="btn">View on GitHub →</a>
+        </div>`;
+    }
+  }
+
+  getFileIcon(name) {
+    const ext = name.includes('.') ? name.split('.').pop().toLowerCase() : '';
+    const icons = {
+      'c': '🇨', 'cpp': '⚙️', 'h': '📎', 'hpp': '📎',
+      'lua': '🌙', 'js': '📜', 'ts': '📘',
+      'py': '🐍', 'json': '📋', 'yml': '⚙️', 'yaml': '⚙️',
+      'md': '📝', 'txt': '📄', 'csv': '📊',
+      'png': '🖼️', 'jpg': '🖼️', 'jpeg': '🖼️', 'gif': '🖼️', 'svg': '🖼️',
+      'bin': '💾', 'hex': '💾', 'elf': '💾',
+      'ino': '⚙️', 'sh': '🐚', 'bat': '🐚',
+    };
+    return icons[ext] || '📄';
+  }
+
+  detectLanguage(name) {
+    const ext = name.includes('.') ? name.split('.').pop().toLowerCase() : '';
+    const langMap = {
+      'c': 'c', 'cpp': 'cpp', 'cc': 'cpp', 'cxx': 'cpp',
+      'h': 'c', 'hpp': 'cpp', 'hxx': 'cpp',
+      'ino': 'cpp',
+      'lua': 'lua',
+      'js': 'javascript', 'mjs': 'javascript', 'jsx': 'javascript',
+      'ts': 'typescript', 'tsx': 'typescript',
+      'py': 'python',
+      'json': 'json',
+      'yml': 'yaml', 'yaml': 'yaml',
+      'md': 'markdown',
+      'sh': 'bash', 'bash': 'bash', 'zsh': 'bash',
+      'bat': 'dos', 'cmd': 'dos',
+      'html': 'html', 'htm': 'html',
+      'css': 'css', 'scss': 'scss',
+      'xml': 'xml',
+      'sql': 'sql',
+      'makefile': 'makefile',
+      'cmake': 'cmake',
+      'txt': 'plaintext',
+    };
+    if (name.toLowerCase() === 'makefile') return 'makefile';
+    if (name.toLowerCase() === 'cmakelists.txt') return 'cmake';
+    return langMap[ext] || null;
+  }
+
+  formatFileSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   }
 
   async showAuthors() {
@@ -251,6 +584,7 @@ class LilkaRepository {
     document.getElementById('loading').style.display = 'none';
     document.getElementById('error').style.display = 'none';
     document.getElementById('docs').style.display = 'none';
+    document.getElementById('examples').style.display = 'none';
     const authorsContainer = document.getElementById('authors');
     authorsContainer.style.display = 'block';
 
@@ -359,6 +693,7 @@ class LilkaRepository {
     document.getElementById('loading').style.display = 'none';
     document.getElementById('error').style.display = 'none';
     document.getElementById('authors').style.display = 'none';
+    document.getElementById('examples').style.display = 'none';
     const docsContainer = document.getElementById('docs');
     docsContainer.style.display = 'block';
 
@@ -374,11 +709,12 @@ class LilkaRepository {
           `<p style="color: var(--error);">Failed to load documentation: ${
               error.message}</p>`;
     }
+    window.scrollTo({top: 0});
   }
 
   async loadPage() {
-    // Don't load if we're on docs tab
-    if (this.currentType === 'docs') {
+    // Don't load if we're on docs/examples tab
+    if (this.currentType === 'docs' || this.currentType === 'examples') {
       return;
     }
 

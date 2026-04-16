@@ -812,6 +812,260 @@ footer {
     margin-right: auto;
 }
 
+/* Examples Page */
+.examples-content {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 2rem 0;
+}
+
+.examples-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.examples-breadcrumb {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    font-size: 0.95rem;
+}
+
+.breadcrumb-item {
+    color: var(--text-muted);
+}
+
+.breadcrumb-link {
+    cursor: pointer;
+    color: var(--primary-color);
+    transition: color 0.2s;
+}
+
+.breadcrumb-link:hover {
+    color: var(--text-primary);
+    text-decoration: underline;
+}
+
+.breadcrumb-sep {
+    color: var(--text-muted);
+    margin: 0 0.15rem;
+}
+
+.examples-repo-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text-primary);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.examples-repo-link:hover {
+    background: var(--surface-light);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+/* File list */
+.examples-file-list {
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    overflow: hidden;
+}
+
+.file-list-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.7rem 1.2rem;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.file-list-item:last-child {
+    border-bottom: none;
+}
+
+.file-list-item:hover {
+    background: var(--surface-light);
+}
+
+.file-list-dir .file-name {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.file-list-back .file-name {
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+.file-list-file .file-name {
+    color: var(--text-primary);
+}
+
+.file-icon {
+    font-size: 1.1rem;
+    width: 1.5rem;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.file-name {
+    flex: 1;
+    font-size: 0.95rem;
+}
+
+.file-size {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+/* File viewer */
+.examples-file-viewer {
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    overflow: hidden;
+}
+
+.file-viewer-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem 1.2rem;
+    background: var(--surface-light);
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+}
+
+.file-viewer-name {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--text-primary);
+}
+
+.file-viewer-meta {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    margin-left: auto;
+}
+
+.file-viewer-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.btn-sm {
+    padding: 0.35rem 0.7rem;
+    font-size: 0.8rem;
+    border-radius: 6px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.btn-sm:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+.file-viewer-code {
+    display: flex;
+    overflow: hidden;
+    max-height: 80vh;
+    font-family: 'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    line-height: 1.6;
+    position: relative;
+}
+
+.line-numbers {
+    display: flex;
+    flex-direction: column;
+    padding: 1rem 0.75rem;
+    background: rgba(0,0,0,0.15);
+    color: var(--text-muted);
+    text-align: right;
+    user-select: none;
+    border-right: 1px solid var(--border);
+    flex-shrink: 0;
+    font-size: 0.8rem;
+    line-height: 1.6;
+    overflow: hidden;
+    position: sticky;
+    left: 0;
+    z-index: 1;
+}
+
+.file-viewer-code pre {
+    margin: 0;
+    padding: 1rem;
+    flex: 1;
+    overflow: auto;
+    background: transparent !important;
+}
+
+.file-viewer-code pre code {
+    background: transparent !important;
+    padding: 0;
+    font-size: 0.85rem;
+    line-height: 1.6;
+}
+
+.file-viewer-image {
+    padding: 2rem;
+    text-align: center;
+    background: var(--surface);
+}
+
+.file-viewer-image img {
+    max-width: 100%;
+    max-height: 70vh;
+    border-radius: 8px;
+    box-shadow: var(--shadow-lg);
+}
+
+/* Error & loading states */
+.examples-error {
+    text-align: center;
+    padding: 3rem;
+    background: var(--surface);
+    border-radius: var(--radius);
+}
+
+.examples-error p {
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+}
+
+.examples-loading {
+    text-align: center;
+    padding: 3rem;
+    color: var(--text-muted);
+    font-size: 1.1rem;
+}
+
 /* Authors Page */
 .authors-content {
     max-width: 1200px;
