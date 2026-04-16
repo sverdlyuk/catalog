@@ -53,7 +53,8 @@ class LilkaRepository {
       }
 
       // Determine if this is a file or directory
-      if (exPath && this._examplesFileCache && this._examplesFileCache[exPath]) {
+      if (exPath && this._examplesFileCache &&
+          this._examplesFileCache[exPath]) {
         const cached = this._examplesFileCache[exPath];
         await this.viewExampleFile(exPath, cached.name, cached.download, true);
       } else {
@@ -319,7 +320,8 @@ class LilkaRepository {
     container.innerHTML = `
       <div class="examples-header">
         <div class="examples-breadcrumb" id="examples-breadcrumb"></div>
-        <a href="${REPO_URL}" target="_blank" rel="noopener noreferrer" class="examples-repo-link">
+        <a href="${
+        REPO_URL}" target="_blank" rel="noopener noreferrer" class="examples-repo-link">
           🐙 View on GitHub
         </a>
       </div>
@@ -332,12 +334,14 @@ class LilkaRepository {
     const bc = document.getElementById('examples-breadcrumb');
     if (!bc) return;
     const parts = path ? path.split('/') : [];
-    let html = `<span class="breadcrumb-item breadcrumb-link" data-path="">📦 examples</span>`;
+    let html =
+        `<span class="breadcrumb-item breadcrumb-link" data-path="">📦 examples</span>`;
     let accumulated = '';
     for (const part of parts) {
       accumulated += (accumulated ? '/' : '') + part;
       html += `<span class="breadcrumb-sep">/</span>`;
-      html += `<span class="breadcrumb-item breadcrumb-link" data-path="${this.escapeHtml(accumulated)}">${this.escapeHtml(part)}</span>`;
+      html += `<span class="breadcrumb-item breadcrumb-link" data-path="${
+          this.escapeHtml(accumulated)}">${this.escapeHtml(part)}</span>`;
     }
     bc.innerHTML = html;
     bc.querySelectorAll('.breadcrumb-link').forEach(link => {
@@ -365,24 +369,28 @@ class LilkaRepository {
       this.updateURL('examples', null, null, path);
     }
 
-    const apiUrl = path
-        ? `https://api.github.com/repos/lilka-dev/examples/contents/${path}`
-        : 'https://api.github.com/repos/lilka-dev/examples/contents';
+    const apiUrl = path ?
+        `https://api.github.com/repos/lilka-dev/examples/contents/${path}` :
+        'https://api.github.com/repos/lilka-dev/examples/contents';
 
     try {
       const response = await fetch(apiUrl);
       if (!response.ok) throw new Error('Failed to load directory');
       const contents = await response.json();
 
-      const dirs = contents.filter(i => i.type === 'dir').sort((a, b) => a.name.localeCompare(b.name));
-      const files = contents.filter(i => i.type === 'file').sort((a, b) => a.name.localeCompare(b.name));
+      const dirs = contents.filter(i => i.type === 'dir')
+                       .sort((a, b) => a.name.localeCompare(b.name));
+      const files = contents.filter(i => i.type === 'file')
+                        .sort((a, b) => a.name.localeCompare(b.name));
 
       let html = '<div class="examples-file-list">';
 
       if (path) {
-        const parentPath = path.includes('/') ? path.substring(0, path.lastIndexOf('/')) : '';
+        const parentPath =
+            path.includes('/') ? path.substring(0, path.lastIndexOf('/')) : '';
         html += `
-          <div class="file-list-item file-list-back" data-action="dir" data-path="${this.escapeHtml(parentPath)}">
+          <div class="file-list-item file-list-back" data-action="dir" data-path="${
+            this.escapeHtml(parentPath)}">
             <span class="file-icon">⬆️</span>
             <span class="file-name">..</span>
           </div>`;
@@ -390,7 +398,8 @@ class LilkaRepository {
 
       for (const dir of dirs) {
         html += `
-          <div class="file-list-item file-list-dir" data-action="dir" data-path="${this.escapeHtml(dir.path)}">
+          <div class="file-list-item file-list-dir" data-action="dir" data-path="${
+            this.escapeHtml(dir.path)}">
             <span class="file-icon">📁</span>
             <span class="file-name">${this.escapeHtml(dir.name)}</span>
           </div>`;
@@ -400,7 +409,10 @@ class LilkaRepository {
         const sizeStr = this.formatFileSize(file.size);
         const langIcon = this.getFileIcon(file.name);
         html += `
-          <div class="file-list-item file-list-file" data-action="file" data-path="${this.escapeHtml(file.path)}" data-name="${this.escapeHtml(file.name)}" data-download="${this.escapeHtml(file.download_url || '')}">
+          <div class="file-list-item file-list-file" data-action="file" data-path="${
+            this.escapeHtml(file.path)}" data-name="${
+            this.escapeHtml(file.name)}" data-download="${
+            this.escapeHtml(file.download_url || '')}">
             <span class="file-icon">${langIcon}</span>
             <span class="file-name">${this.escapeHtml(file.name)}</span>
             <span class="file-size">${sizeStr}</span>
@@ -426,7 +438,8 @@ class LilkaRepository {
               download: item.dataset.download
             };
             this.updateURL('examples', null, null, itemPath);
-            this.viewExampleFile(itemPath, item.dataset.name, item.dataset.download, true);
+            this.viewExampleFile(
+                itemPath, item.dataset.name, item.dataset.download, true);
           }
         });
       });
@@ -435,7 +448,10 @@ class LilkaRepository {
       bodyEl.className = 'examples-error';
       bodyEl.innerHTML = `
         <p>📦 Could not load directory listing.</p>
-        <a href="${REPO_URL}${path ? '/tree/main/' + path : ''}" target="_blank" rel="noopener noreferrer" class="btn">Open on GitHub →</a>
+        <a href="${REPO_URL}${
+          path ?
+              '/tree/main/' + path :
+              ''}" target="_blank" rel="noopener noreferrer" class="btn">Open on GitHub →</a>
       `;
     }
   }
@@ -454,19 +470,23 @@ class LilkaRepository {
     }
 
     const REPO_URL = 'https://github.com/lilka-dev/examples';
-    const rawUrl = downloadUrl || `https://raw.githubusercontent.com/lilka-dev/examples/main/${path}`;
+    const rawUrl = downloadUrl ||
+        `https://raw.githubusercontent.com/lilka-dev/examples/main/${path}`;
 
     try {
       const ext = name.includes('.') ? name.split('.').pop().toLowerCase() : '';
-      const imageExts = ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'svg', 'webp', 'ico'];
+      const imageExts =
+          ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'svg', 'webp', 'ico'];
 
       if (imageExts.includes(ext)) {
         viewer.innerHTML = `
           <div class="file-viewer-header">
             <span class="file-viewer-name">${this.escapeHtml(name)}</span>
             <div class="file-viewer-actions">
-              <a href="${REPO_URL}/blob/main/${path}" target="_blank" rel="noopener noreferrer" class="btn btn-sm">View on GitHub</a>
-              <a href="${rawUrl}" download="${this.escapeHtml(name)}" class="btn btn-sm">Download</a>
+              <a href="${REPO_URL}/blob/main/${
+            path}" target="_blank" rel="noopener noreferrer" class="btn btn-sm">View on GitHub</a>
+              <a href="${rawUrl}" download="${
+            this.escapeHtml(name)}" class="btn btn-sm">Download</a>
             </div>
           </div>
           <div class="file-viewer-image">
@@ -488,16 +508,21 @@ class LilkaRepository {
       }
 
       const lineCount = text.split('\n').length;
-      const lineNumbers = Array.from({length: lineCount}, (_, i) => `<span>${i + 1}</span>`).join('\n');
+      const lineNumbers =
+          Array.from({length: lineCount}, (_, i) => `<span>${i + 1}</span>`)
+              .join('\n');
 
       viewer.innerHTML = `
         <div class="file-viewer-header">
           <span class="file-viewer-name">${this.escapeHtml(name)}</span>
-          <span class="file-viewer-meta">${lineCount} lines · ${this.formatFileSize(text.length)}</span>
+          <span class="file-viewer-meta">${lineCount} lines · ${
+          this.formatFileSize(text.length)}</span>
           <div class="file-viewer-actions">
             <button class="btn btn-sm" id="copy-code-btn">📋 Copy</button>
-            <a href="${rawUrl}" download="${this.escapeHtml(name)}" class="btn btn-sm">⬇ Download</a>
-            <a href="${REPO_URL}/blob/main/${path}" target="_blank" rel="noopener noreferrer" class="btn btn-sm">GitHub</a>
+            <a href="${rawUrl}" download="${
+          this.escapeHtml(name)}" class="btn btn-sm">⬇ Download</a>
+            <a href="${REPO_URL}/blob/main/${
+          path}" target="_blank" rel="noopener noreferrer" class="btn btn-sm">GitHub</a>
           </div>
         </div>
         <div class="file-viewer-code">
@@ -505,13 +530,14 @@ class LilkaRepository {
           <pre><code class="hljs">${highlighted}</code></pre>
         </div>`;
 
-      document.getElementById('copy-code-btn')?.addEventListener('click', () => {
-        navigator.clipboard.writeText(text).then(() => {
-          const btn = document.getElementById('copy-code-btn');
-          btn.textContent = '✅ Copied!';
-          setTimeout(() => btn.textContent = '📋 Copy', 2000);
-        });
-      });
+      document.getElementById('copy-code-btn')
+          ?.addEventListener('click', () => {
+            navigator.clipboard.writeText(text).then(() => {
+              const btn = document.getElementById('copy-code-btn');
+              btn.textContent = '✅ Copied!';
+              setTimeout(() => btn.textContent = '📋 Copy', 2000);
+            });
+          });
 
       // Sync line numbers scroll with code scroll
       const codePreEl = viewer.querySelector('.file-viewer-code pre');
@@ -525,7 +551,8 @@ class LilkaRepository {
       viewer.innerHTML = `
         <div class="examples-error">
           <p>Failed to load file: ${this.escapeHtml(error.message)}</p>
-          <a href="${REPO_URL}/blob/main/${path}" target="_blank" rel="noopener noreferrer" class="btn">View on GitHub →</a>
+          <a href="${REPO_URL}/blob/main/${
+          path}" target="_blank" rel="noopener noreferrer" class="btn">View on GitHub →</a>
         </div>`;
     }
   }
@@ -533,13 +560,31 @@ class LilkaRepository {
   getFileIcon(name) {
     const ext = name.includes('.') ? name.split('.').pop().toLowerCase() : '';
     const icons = {
-      'c': '🇨', 'cpp': '⚙️', 'h': '📎', 'hpp': '📎',
-      'lua': '🌙', 'js': '📜', 'ts': '📘',
-      'py': '🐍', 'json': '📋', 'yml': '⚙️', 'yaml': '⚙️',
-      'md': '📝', 'txt': '📄', 'csv': '📊',
-      'png': '🖼️', 'jpg': '🖼️', 'jpeg': '🖼️', 'gif': '🖼️', 'svg': '🖼️',
-      'bin': '💾', 'hex': '💾', 'elf': '💾',
-      'ino': '⚙️', 'sh': '🐚', 'bat': '🐚',
+      'c': '🇨',
+      'cpp': '⚙️',
+      'h': '📎',
+      'hpp': '📎',
+      'lua': '🌙',
+      'js': '📜',
+      'ts': '📘',
+      'py': '🐍',
+      'json': '📋',
+      'yml': '⚙️',
+      'yaml': '⚙️',
+      'md': '📝',
+      'txt': '📄',
+      'csv': '📊',
+      'png': '🖼️',
+      'jpg': '🖼️',
+      'jpeg': '🖼️',
+      'gif': '🖼️',
+      'svg': '🖼️',
+      'bin': '💾',
+      'hex': '💾',
+      'elf': '💾',
+      'ino': '⚙️',
+      'sh': '🐚',
+      'bat': '🐚',
     };
     return icons[ext] || '📄';
   }
@@ -547,20 +592,34 @@ class LilkaRepository {
   detectLanguage(name) {
     const ext = name.includes('.') ? name.split('.').pop().toLowerCase() : '';
     const langMap = {
-      'c': 'c', 'cpp': 'cpp', 'cc': 'cpp', 'cxx': 'cpp',
-      'h': 'c', 'hpp': 'cpp', 'hxx': 'cpp',
+      'c': 'c',
+      'cpp': 'cpp',
+      'cc': 'cpp',
+      'cxx': 'cpp',
+      'h': 'c',
+      'hpp': 'cpp',
+      'hxx': 'cpp',
       'ino': 'cpp',
       'lua': 'lua',
-      'js': 'javascript', 'mjs': 'javascript', 'jsx': 'javascript',
-      'ts': 'typescript', 'tsx': 'typescript',
+      'js': 'javascript',
+      'mjs': 'javascript',
+      'jsx': 'javascript',
+      'ts': 'typescript',
+      'tsx': 'typescript',
       'py': 'python',
       'json': 'json',
-      'yml': 'yaml', 'yaml': 'yaml',
+      'yml': 'yaml',
+      'yaml': 'yaml',
       'md': 'markdown',
-      'sh': 'bash', 'bash': 'bash', 'zsh': 'bash',
-      'bat': 'dos', 'cmd': 'dos',
-      'html': 'html', 'htm': 'html',
-      'css': 'css', 'scss': 'scss',
+      'sh': 'bash',
+      'bash': 'bash',
+      'zsh': 'bash',
+      'bat': 'dos',
+      'cmd': 'dos',
+      'html': 'html',
+      'htm': 'html',
+      'css': 'css',
+      'scss': 'scss',
       'xml': 'xml',
       'sql': 'sql',
       'makefile': 'makefile',
