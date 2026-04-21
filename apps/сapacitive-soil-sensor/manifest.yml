@@ -1,0 +1,18 @@
+name: Capacitive Soil Moisture Sensor v1.2 (LUA)
+sources:
+  type: git
+  location:
+    origin: https://github.com/sverdlyuk/lilka-moisture-soil/
+entryfile:
+  type: lua
+  location:
+    origin: https://raw.githubusercontent.com/sverdlyuk/lilka-moisture-soil/refs/heads/main/soil.lua
+short_description: Програма виміру вологості ґрунту ємнісним датчиком Capacitive Soil Moisture Sensor v1.2
+description: "@DESCRIPTION.md"
+author: "@sverdlyuk"
+license: MIT
+keira_version: 1.0.0
+icon: img.png
+screenshots:
+  - img.png
+  - img2.png
