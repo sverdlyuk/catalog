@@ -1,0 +1,18 @@
+name: Asteroids (LUA)
+sources:
+  type: git
+  location:
+    origin: https://github.com/lilka-dev/examples/tree/main/LUA/asteroids
+entryfile:
+  type: lua
+  location:
+    origin: https://raw.githubusercontent.com/lilka-dev/examples/refs/heads/main/LUA/asteroids/asteroids.lua
+short_description: Виживи серед астероїдів. Літай, стріляй, ухиляйся
+description: "@DESCRIPTION.md"
+author: "@and3rson"
+license: NONE
+keira_version: 1.0.0
+icon: img1.png
+screenshots:
+  - img1.png
+  - img2.png
